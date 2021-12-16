@@ -65,6 +65,8 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
             detectors = Detectors(fs)  
             for idx, ecg_lead in enumerate(ecg_leads):
                 ecg_lead = ecg_lead.astype('float')  # Wandel der Daten von Int in Float32 Format für CNN später
+                ecg_lead = (ecg_lead - ecg_lead.mean()) 
+                ecg_lead = ecg_lead / (ecg_lead.std() + 1e-08)  
                 r_peaks = detectors.hamilton_detector(ecg_lead)     # Detektion der QRS-Komplexe
                 sdnn = np.std(np.diff(r_peaks)/fs*1000)             # Berechnung der Standardabweichung der Schlag-zu-Schlag Intervalle (SDNN) in Millisekunden
                 for r_peak in r_peaks:
