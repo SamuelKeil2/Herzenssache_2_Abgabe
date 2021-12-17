@@ -53,73 +53,73 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
 
     #------------------------------------------------------------------------------
     # Euer Code ab hier  
-    if (model_name == "CNN"):
-        if (is_binary_classifier==True):    #Beginn des binären Klassifizierers
-            cnn_model = load_model("./CNN_Model/model_bin.hdf5")
-            print('Model Loaded!')
+    if (model_name == "CNN_bin"): #Beginn des binären Klassifizierers
+        cnn_model = load_model("./CNN_bin/model_bin.hdf5")
+        print('Model Loaded!')
 
-            data_names = []
-            data_samples = []
-            r_peaks_list = []
+        data_names = []
+        data_samples = []
+        r_peaks_list = []
 
-            detectors = Detectors(fs)  
-            for idx, ecg_lead in enumerate(ecg_leads):
-                ecg_lead = ecg_lead.astype('float')  # Wandel der Daten von Int in Float32 Format für CNN später
-                ecg_lead = (ecg_lead - ecg_lead.mean()) 
-                ecg_lead = ecg_lead / (ecg_lead.std() + 1e-08)  
-                r_peaks = detectors.hamilton_detector(ecg_lead)     # Detektion der QRS-Komplexe
-                sdnn = np.std(np.diff(r_peaks)/fs*1000)             # Berechnung der Standardabweichung der Schlag-zu-Schlag Intervalle (SDNN) in Millisekunden
-                for r_peak in r_peaks:
-                    if r_peak > 150 and r_peak + 150 <= len(ecg_lead):
-                        data_samples.append(ecg_lead[r_peak - 150:r_peak + 150])
-                        data_names.append(ecg_names[idx])
+        detectors = Detectors(fs)  
+        for idx, ecg_lead in enumerate(ecg_leads):
+            ecg_lead = ecg_lead.astype('float')  # Wandel der Daten von Int in Float32 Format für CNN später
+            ecg_lead = (ecg_lead - ecg_lead.mean()) 
+            ecg_lead = ecg_lead / (ecg_lead.std() + 1e-08)  
+            r_peaks = detectors.hamilton_detector(ecg_lead)     # Detektion der QRS-Komplexe
+            sdnn = np.std(np.diff(r_peaks)/fs*1000)             # Berechnung der Standardabweichung der Schlag-zu-Schlag Intervalle (SDNN) in Millisekunden
+            for r_peak in r_peaks:
+                if r_peak > 150 and r_peak + 450 <= len(ecg_lead):
+                    data_samples.append(ecg_lead[r_peak - 150:r_peak + 450])
+                    data_names.append(ecg_names[idx])
 
-            data_samples = np.array(data_samples)
-            data_samples = data_samples.reshape((*data_samples.shape, 1))
+        data_samples = np.array(data_samples)
+        data_samples = data_samples.reshape((*data_samples.shape, 1))
 
-            predictions = list()
-            label_predicted = []
-            label_predicted_democatric = []
-            x = 0
-            
-            predicted = cnn_model.predict(data_samples) # Hier auch
-            print("Test")
-            
-            for row in predicted:   #Feststellen der wahrscheinlichsten Klasse
-                if predicted[x,0]>predicted[x,1]:
-                    label_predicted.append("N")
-                elif predicted[x,0]<predicted[x,1]:
-                    label_predicted.append("A")
+        predictions = list()
+        label_predicted = []
+        label_predicted_democatric = []
+        x = 0
+        
+        predicted = cnn_model.predict(data_samples) # Hier auch
+        print("Test")
+        
+        for row in predicted:   #Feststellen der wahrscheinlichsten Klasse
+            if predicted[x,0]>predicted[x,1]:
+                label_predicted.append("N")
+            elif predicted[x,0]<predicted[x,1]:
+                label_predicted.append("A")
+            else:
+                print("FEHLER")
+            x = x + 1
+        n_sum = 0
+        a_sum = 0
+        t = 0
+        for ecg_row in ecg_names:   #Demokratischer Ansatz um EKG-Signale anhand der Herzschlag-Predictions einzuordnen
+            for idx, y in enumerate(data_names):
+                if (ecg_row==y):
+                    if (label_predicted[idx]=='N'):
+                        n_sum = n_sum + 1
+                    elif (label_predicted[idx]=='A'):
+                        a_sum = a_sum +1
                 else:
-                    print("FEHLER")
-                x = x + 1
+                    pass
+            if (n_sum>=a_sum):
+                label_predicted_democatric.append("N")
+            elif (n_sum<a_sum):
+                label_predicted_democatric.append("A")
+            print("In {}: Number of A-Heartbeats: {}, Number of N-Heartbeats: {}".format(ecg_row,a_sum, n_sum))
             n_sum = 0
-            a_sum = 0
-            t = 0
-            for ecg_row in ecg_names:   #Demokratischer Ansatz um EKG-Signale anhand der Herzschlag-Predictions einzuordnen
-                for idx, y in enumerate(data_names):
-                    if (ecg_row==y):
-                        if (label_predicted[idx]=='N'):
-                            n_sum = n_sum + 1
-                        elif (label_predicted[idx]=='A'):
-                            a_sum = a_sum +1
-                    else:
-                        pass
-                if (n_sum>=a_sum):
-                    label_predicted_democatric.append("N")
-                elif (n_sum<a_sum):
-                    label_predicted_democatric.append("A")
-                print("In {}: Number of A-Heartbeats: {}, Number of N-Heartbeats: {}".format(ecg_row,a_sum, n_sum))
-                n_sum = 0
-                a_sum = 0       
-                        
+            a_sum = 0       
+                    
 
-            print("Test")
-            for idx, name_row in enumerate(ecg_names): #Erstellen des finalen Returnwertes
-                predictions.append((ecg_names[idx], label_predicted_democatric[idx]))
-            print("fertig")
-        elif(is_binary_classifier==False):   #Beginn des Multilabel-Klassifizierers
-            cnn_model = load_model("./CNN_Model/model_multi.hdf5")
+        print("Test")
+        for idx, name_row in enumerate(ecg_names): #Erstellen des finalen Returnwertes
+            predictions.append((ecg_names[idx], label_predicted_democatric[idx]))
+        print("fertig")
+    elif (model_name == "CNN_multi"): #Beginn des binären Klassifizierers            
+            #Beginn des Multilabel-Klassifizierers
+            cnn_model = load_model("./CNN_multi/model_multi.hdf5")
             print('Model Loaded!')
             data_names = []
             data_samples = []
@@ -131,8 +131,8 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
                 r_peaks = detectors.hamilton_detector(ecg_lead)     # Detektion der QRS-Komplexe
                 sdnn = np.std(np.diff(r_peaks)/fs*1000)             # Berechnung der Standardabweichung der Schlag-zu-Schlag Intervalle (SDNN) in Millisekunden
                 for r_peak in r_peaks:
-                    if r_peak > 150 and r_peak + 150 <= len(ecg_lead):
-                        data_samples.append(ecg_lead[r_peak - 150:r_peak + 150])
+                    if r_peak > 150 and r_peak + 450 <= len(ecg_lead):
+                        data_samples.append(ecg_lead[r_peak - 150:r_peak + 450])
                         data_names.append(ecg_names[idx])
 
             data_samples = np.array(data_samples)

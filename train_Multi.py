@@ -28,8 +28,8 @@ for idx, ecg_lead in enumerate(ecg_leads):
     ecg_lead = ecg_lead.astype('float')  # Wandel der Daten von Int in Float32 Format für CNN später
     r_peaks = detectors.hamilton_detector(ecg_lead)     # Detektion der QRS-Komplexe
     for r_peak in r_peaks:
-        if r_peak > 150 and r_peak + 150 <= len(ecg_lead):
-            train_samples.append(ecg_lead[r_peak - 150:r_peak + 150]) #Einzelne Herzschläge werden separiert und als Trainingsdaten der Länge 300 abgespeichert
+        if r_peak > 150 and r_peak + 450 <= len(ecg_lead):
+            train_samples.append(ecg_lead[r_peak - 150:r_peak + 450]) #Einzelne Herzschläge werden separiert und als Trainingsdaten der Länge 300 abgespeichert
             train_labels.append(ecg_labels[idx])
 
     line_count = line_count + 1
@@ -80,7 +80,7 @@ model = models.Sequential()
 #model.add(resize_and_rescale)
 #model.add(data_augmentation)
 model.add(layers.GaussianNoise(0.1))
-model.add(layers.Conv1D(64, 5, activation='relu', input_shape=(300, 1)))
+model.add(layers.Conv1D(64, 5, activation='relu', input_shape=(600, 1)))
 model.add(layers.Conv1D(64, 5, activation='relu'))
 model.add(layers.MaxPooling1D(2))
 model.add(layers.Dropout(0.1))
