@@ -113,7 +113,7 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
             a_sum = 0       
                     
 
-        print("Test")
+        
         for idx, name_row in enumerate(ecg_names): #Erstellen des finalen Returnwertes
             predictions.append((ecg_names[idx], label_predicted_democatric[idx]))
         print("fertig")
